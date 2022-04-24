@@ -6,6 +6,7 @@ from sentence_splitter import SentenceSplitter
 import nltk
 from termcolor import colored
 
+# Use NLTK's data downloader to download the required data packages (WordNet and Open Multilingual Wordnet) if not present already
 for resource in ["wordnet", "omw-1.4"]:
     try:
         nltk_path = nltk.find("corpora/{0}".format(resource))
@@ -19,12 +20,10 @@ class PegasusParaphraser:
     def __init__(self, num_beams=10):
         self.module_dir = os.path.dirname(__file__)
 
-        # if(torch.cuda.is_available()):
-        #     self.device = torch.device("cuda:0")
-        # else:
-        #     self.device = torch.device("cpu:0")
-
-        self.device = torch.device("cpu:0")
+        if(torch.cuda.is_available()):
+            self.device = torch.device("cuda:0")
+        else:
+            self.device = torch.device("cpu:0")
 
         # Pegasus Tokenizer & Model for Paraphrasing
         print(colored("INFO", "green"),":\t  Loading Pegasus Tokenizer & Model for Paraphrasing.")
@@ -55,6 +54,7 @@ class KeywordSynonyms:
 
     def extractKeywords(self, text):
         keywords = self.keyword_extraction_model.extract_keywords(text)
+        # The output is of the format [('keyword1', 'score1'), ('keyword2', 'score2'), ...]
         return [x[0] for x in keywords]
     
     def getSynonyms(self, word, max_synonyms=6):
@@ -62,8 +62,10 @@ class KeywordSynonyms:
         for syn in wordnet.synsets(word):
             for l in syn.lemmas():
                 synonyms.append(l.name().replace("_", " "))
+                # Multi-word synonyms contain a '_' between the words, which needs to be replaced with a ' '
         
-        return [x for x in list(set(synonyms)) if x.lower() != word.lower()][:max_synonyms] # Consider those synonyms that are not the same as the original word
+        return [x for x in list(set(synonyms)) if x.lower() != word.lower()][:max_synonyms] 
+        # Consider those synonyms that are not the same as the original word
     
     def getSynonymsForKeywords(self, text, max_synonyms=6):
         keywords = self.extractKeywords(text)
